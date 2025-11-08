@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pet Goose 🪿</title>
+<title>Interactive Pet Goose 🪿</title>
 <style>
 body {
   margin: 0;
@@ -17,7 +17,7 @@ body {
   position: absolute;
   width: 140px;
   height: 140px;
-  pointer-events: none;
+  pointer-events: auto;
   transform-origin: center center;
 }
 
@@ -37,25 +37,32 @@ body {
   transform: translate(-50%, -50%);
 }
 
-.heart {
-  position: absolute;
-  color: #ff5a8a;
-  font-size: 20px;
-  animation: floatUp 1.2s ease-out forwards;
+#crying {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  font-size: 24px;
+  color: #3498db;
+  display: none;
+  user-select: none;
+  pointer-events: none;
+  animation: blinkCry 1s infinite;
 }
 
-@keyframes floatUp {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-60px); opacity: 0; }
+@keyframes blinkCry {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>
 </head>
 <body>
 
 <div id="goose">
-  <img id="gooseImg" src="https://upload.wikimedia.org/wikipedia/commons/8/88/Cartoon_goose.svg" alt="goose">
+  <img id="gooseImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAACXBIWXMAAAsTAAALEwEAmpwYAAACmUlEQVR4nO3dQW7jMBCF4T6H//3vQFpK0IKuTqwu6EXv63RSpGJxMIc6LxRJEkSSRJEmSpHv9bNSlRr7PQI0zjQzRBJlHkZJkSZIkSRJkmT0tE5ozG1bJuU9FbN7gM6zj40zphGfP5aGmZl1/X0Z7y7RJEmSpIksQzqSZIkSRJkiRJLkgRvT9kkuVebJkSVJkmSZIkSTpRrsgTfT3tNT4j/HxkVbE6NE6UpK2p2xKaF8eQJEmSpIkSTpJkiRJ0rJAkSRJEmSpEkSRJ0o5vSQpIkSRJEmSpEkSTJ4nShIkSRJEmSpEkSTp1PCDJkSQpIkSRJEmSpEkSTJ4nQhIkSRJEmSpEkSTp9PiDJkSQpIkSRJEmSpEkSTJ4nQhIkSRJEmSpEkSTp9PiDJkSQpIkSRJEmSpEkSTJ4nQhIkSRJEmSpEkSTp9PiDJkSQpIkSRJEmSpEkSTJ4nQhIkSRJEmSpEkSTp9PiDJkSQpIkSRJEmSpEkSTJ4nQhIkSRJEmSpEkSTp9PiDJkSQpIkSRJEmSpEkSTJ4nQhIkSRJEmSpEkSTp9PiDJkSfrv8Aj3bYAXALv1kAAAAASUVORK5CYII=" alt="goose">
 </div>
+
 <div id="cursor"></div>
+<div id="crying">😢 Goose is sad!</div>
 
 <audio id="hugSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d8f62fef92.mp3?filename=pop-86917.mp3"></audio>
 <audio id="quackSound" src="https://cdn.pixabay.com/download/audio/2023/02/28/audio_b0f6e3d1b8.mp3?filename=duck-quack-101563.mp3"></audio>
@@ -64,6 +71,7 @@ body {
 const goose = document.getElementById('goose');
 const gooseImg = document.getElementById('gooseImg');
 const cursor = document.getElementById('cursor');
+const crying = document.getElementById('crying');
 const hugSound = document.getElementById('hugSound');
 const quackSound = document.getElementById('quackSound');
 
@@ -75,22 +83,26 @@ let hugging = false;
 let lastMouseX = mouseX;
 let lastMouseY = mouseY;
 let lastMouseTime = Date.now();
+let caught = false;
 
 document.addEventListener('mousemove', e => {
   mouseX = e.clientX;
   mouseY = e.clientY;
+  caught = false;
+  crying.style.display = 'none';
 });
 
-function makeHeart(x,y){
-  const h = document.createElement('div');
-  h.className='heart';
-  h.textContent='❤️';
-  h.style.left=x+'px';
-  h.style.top=y+'px';
-  document.body.appendChild(h);
-  setTimeout(()=>h.remove(),1200);
+// Blink eyes and flap wings (simulate with slight rotation)
+function animateGoose() {
+  const t = Date.now();
+  const flap = 1 + Math.sin(t*0.02)*0.05;
+  if(!hugging){
+    goose.style.transform = `translate(${gooseX}px,${gooseY}px) scaleX(${mouseX-gooseX<0?-1:1}) scale(${flap})`;
+  }
+  requestAnimationFrame(animateGoose);
 }
 
+// Goose chasing logic
 function moveGoose(){
   const dx = mouseX - gooseX;
   const dy = mouseY - gooseY;
@@ -109,18 +121,15 @@ function moveGoose(){
       gooseImg.style.transform='';
     }
 
-    // Slow movement: smaller factor
     if(dist>10){
-      gooseX += dx*0.025; // slower
-      gooseY += dy*0.025;
+      gooseX += dx*0.012; // slower movement
+      gooseY += dy*0.012;
     }
 
-    if(dist<50) startHug();
+    if(dist<50 && !hugging){
+      startHug();
+    }
   }
-
-  // Flap wings visually
-  const flap = 1 + Math.sin(now*0.02)*0.05;
-  goose.style.transform=`translate(${gooseX}px,${gooseY}px) scaleX(${dx<0?-1:1}) scale(${flap})`;
 
   cursor.style.left=mouseX+'px';
   cursor.style.top=mouseY+'px';
@@ -133,6 +142,7 @@ function moveGoose(){
 function startHug(){
   if(hugging) return;
   hugging=true;
+  caught = true;
 
   quackSound.currentTime=0;
   quackSound.play();
@@ -141,21 +151,7 @@ function startHug(){
   hugSound.volume=0.2;
   hugSound.play();
 
-  let t=0;
-  const hugInterval=setInterval(()=>{
-    t++;
-    goose.style.transform=`translate(${gooseX}px,${gooseY}px) scale(${1+Math.sin(t*0.3)*0.1}) rotate(${Math.sin(t*0.3)*8}deg)`;
-    makeHeart(mouseX+Math.random()*20-10, mouseY-30);
-  },100);
-
-  const lagInterval=setInterval(()=>{
-    const lag = Math.sin(Date.now()*0.02)*0.1;
-    cursor.style.transform=`translate(-50%,-50%) scale(${1+lag})`;
-  },30);
-
   setTimeout(()=>{
-    clearInterval(hugInterval);
-    clearInterval(lagInterval);
     hugging=false;
   },2000);
 }
@@ -170,7 +166,22 @@ setTimeout(()=>{
   },3000);
 },25000);
 
+// Goose cries if not caught after 19s
+setTimeout(()=>{
+  if(!caught){
+    crying.style.display='block';
+  }
+},19000);
+
+// Click goose to make happy
+goose.addEventListener('click', ()=>{
+  crying.style.display='none';
+  quackSound.currentTime=0;
+  quackSound.play();
+});
+
 setInterval(moveGoose,20);
+animateGoose();
 </script>
 
 </body>
